@@ -51,49 +51,25 @@ void setup() {
   delay(1000);
   digitalWrite(green, LOW);
 
-  while(digitalRead(button) == HIGH);
+  while(digitalRead(button2) == HIGH);
 
   digitalWrite(red, HIGH);
   delay(1000);
   digitalWrite(red, LOW);
   
-  middle = readProximity();
-  leftServo.write(135);
-  rightServo.write(135);
-  delay(50);
-  leftServo.write(90);
-  rightServo.write(90);
-  delay(1000);
-  right = readProximity();
-  leftServo.write(45);
-  rightServo.write(45);
-  delay(100);
-  leftServo.write(90);
-  rightServo.write(90);
-  delay(1000);
-  left = readProximity();
-  //leftServo.write(135);
-  //rightServo.write(60);
-  delay(3000);
-  //while(digitalRead(button2) == HIGH);
-  
-  Serial.print("left: ");
-  Serial.println(left);
-  Serial.print("right: ");
-  Serial.println(right);
 }
 
 void loop() {
   proximityValue = readProximity();
-  if(proximityValue < right) {
+  if(proximityValue < 2660) {
     // turn left
     leftServo.write(mid - offset);
     rightServo.write(mid - offset);
-  } else if (proximityValue > left) {
+  } else if (proximityValue > 2685) {
     // turn right
     leftServo.write(mid + offset);
     rightServo.write(mid + offset);
-  } else if (proximityValue > right + (left-right)/3 && proximityValue < left - (left-right)/3){
+  } else if (proximityValue > 2665 && proximityValue < 2680){
     // drive straight
     leftServo.write(180);
     rightServo.write(0);
