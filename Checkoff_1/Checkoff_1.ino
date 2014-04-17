@@ -19,11 +19,13 @@ int button2 = 4;
 int proximityValue;
 
 int mid = 90;
-int offset = 45;
+int offset = 25;
 
 int middle;
 int left;
 int right;
+
+int i, sum, justRight, tooClose, tooFar;
 
 Servo leftServo;
 Servo rightServo;
@@ -40,43 +42,86 @@ void setup() {
   leftServo.attach(9);
   rightServo.attach(10);
   
-  
   Wire.begin();
   //writeByte(AMBIENT_PARAMETER, 0x0F);  // Single conversion mode, 128 averages
   writeByte(IR_CURRENT, 20);  // Set IR current to 200mA
   writeByte(PROXIMITY_FREQ, 2);  // 781.25 kHz
   writeByte(PROXIMITY_MOD, 0x81);  // 129, recommended by Vishay
-  
-  digitalWrite(green, HIGH);
-  delay(1000);
-  digitalWrite(green, LOW);
 
-  while(digitalRead(button2) == HIGH);
-
+  // blink LEDs
   digitalWrite(red, HIGH);
-  delay(1000);
+  delay(250);
+  digitalWrite(red, LOW);
+  digitalWrite(green, HIGH);
+  delay(250);
+  digitalWrite(green, LOW);
+  digitalWrite(blue, HIGH);
+  delay(250);
+  digitalWrite(blue, LOW);
+  
+  // calibrate "too close" value
+  digitalWrite(blue, HIGH);
+  while(digitalRead(button2) == HIGH);
+  for (i = 0, sum = 0; i < 5; i++) {
+       sum += readProximity();
+  }
+  tooClose = sum/5;
+//  Serial.println(tooClose, DEC);
+  digitalWrite(blue, LOW);
+  
+  digitalWrite(red, HIGH);
+  delay(500);
   digitalWrite(red, LOW);
   
+  // calibrate "too far" value
+  digitalWrite(blue, HIGH);
+  while(digitalRead(button2) == HIGH);
+  for(i = 0, sum = 0; i < 5; i++) {
+       sum += readProximity();   
+  }
+  tooFar = sum/5;
+//  Serial.println(tooFar, DEC);
+  digitalWrite(blue, LOW);
+  
+  digitalWrite(red, HIGH);
+  delay(500);
+  digitalWrite(red, LOW);
+  
+  // calibrate "just right" value
+  digitalWrite(blue, HIGH);
+  while(digitalRead(button2) == HIGH);
+  for(i = 0, sum = 0; i < 5; i++) {
+       sum += readProximity();   
+  }
+  justRight = sum/5;
+//  Serial.println(justRight, DEC);
+  digitalWrite(blue, LOW);
+  
+  digitalWrite(red, HIGH);
+  delay(500);
+  digitalWrite(red, LOW);
+  
+  digitalWrite(green, HIGH);
+  while(digitalRead(button2) == HIGH);
 }
 
 void loop() {
   proximityValue = readProximity();
-  if(proximityValue < 2660) {
+  if(proximityValue < tooFar) {
     // turn left
     leftServo.write(mid - offset);
     rightServo.write(mid - offset);
-  } else if (proximityValue > 2685) {
+  } else if (proximityValue > tooClose) {
     // turn right
     leftServo.write(mid + offset);
     rightServo.write(mid + offset);
-  } else if (proximityValue > 2665 && proximityValue < 2680){
+  } else if (proximityValue > justRight-3 && proximityValue < justRight+3){
     // drive straight
     leftServo.write(180);
     rightServo.write(0);
   }
   
-  //if (proximityValue
-  Serial.println(proximityValue, DEC);
+  // Serial.println(proximityValue, DEC);
 }
 
 // readProximity() returns a 16-bit value from the VCNL4000's proximity data registers
