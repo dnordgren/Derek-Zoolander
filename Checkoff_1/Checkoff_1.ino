@@ -19,7 +19,7 @@ int button2 = 4;
 int proximityValue;
 
 int mid = 90;
-int offset = 25;
+int offset = 15;
 
 int middle;
 int left;
@@ -66,7 +66,7 @@ void setup() {
        sum += readProximity();
   }
   tooClose = sum/5;
-//  Serial.println(tooClose, DEC);
+  //Serial.println(tooClose, DEC);
   digitalWrite(blue, LOW);
   
   digitalWrite(red, HIGH);
@@ -80,7 +80,7 @@ void setup() {
        sum += readProximity();   
   }
   tooFar = sum/5;
-//  Serial.println(tooFar, DEC);
+  //Serial.println(tooFar, DEC);
   digitalWrite(blue, LOW);
   
   digitalWrite(red, HIGH);
@@ -94,7 +94,7 @@ void setup() {
        sum += readProximity();   
   }
   justRight = sum/5;
-//  Serial.println(justRight, DEC);
+  //Serial.println(justRight, DEC);
   digitalWrite(blue, LOW);
   
   digitalWrite(red, HIGH);
