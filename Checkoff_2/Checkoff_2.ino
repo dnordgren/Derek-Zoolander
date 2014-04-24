@@ -128,8 +128,8 @@ void avoidObstacle(){
     delay(1000);
     stopRobot();
     delay(1000);
+    attachInterrupt(0, moveAfterBump, LOW)
     turnLeftInPlace();
-    while(digitalRead(leftBump) == HIGH){}
     stopRobot();
   } else {
     // Check left side for clear path
@@ -138,6 +138,13 @@ void avoidObstacle(){
     digitalWrite(BLUE, LOW);
   }
   delay(5000);
+}
+
+void moveAfterBump()
+{
+  turnRightInPlace();
+  delay(100);
+  stopRobot();
 }
 
 void resetLights() {
