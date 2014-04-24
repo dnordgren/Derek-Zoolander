@@ -1,4 +1,21 @@
 #include <Servo.h>
+#include <Wire.h>
+
+#define VCNL4000_ADDRESS 0x13  // 0x26 write, 0x27 read
+
+#define COMMAND_0 0x80  // starts measurments, relays data ready info
+#define IR_CURRENT 0x83  // sets IR current in steps of 10mA 0-200mA
+#define PROXIMITY_RESULT_MSB 0x87  // High byte of proximity measure
+#define PROXIMITY_RESULT_LSB 0x88  // low byte of proximity measure
+#define PROXIMITY_FREQ 0x89  // Proximity IR test signal freq, 0-3
+#define PROXIMITY_MOD 0x8A  // proximity modulator timing
+
+int proximityValue;
+int proxHighTolerance = 2800;
+int proxLowTolerance = 2700;
+
+int leftBump = 2;
+int rightBump = 3;
 
 int BUTTON = 4;
 int RED = 8;
@@ -24,6 +41,15 @@ void setup() {
   speedFactor = .75; //Percentage of full speed robot will move straight with
   turnFactor = .5; //Percentage of full speed robot will turn with
   
+  pinMode(leftBump, INPUT_PULLUP);
+  pinMode(rightBump, INPUT_PULLUP);
+  
+  Wire.begin();
+  //writeByte(AMBIENT_PARAMETER, 0x0F);  // Single conversion mode, 128 averages
+  writeByte(IR_CURRENT, 20);  // Set IR current to 200mA
+  writeByte(PROXIMITY_FREQ, 2);  // 781.25 kHz
+  writeByte(PROXIMITY_MOD, 0x81);  // 129, recommended by Vishay
+  
   pinMode(BUTTON, INPUT_PULLUP);
   pinMode(RED, OUTPUT); //Indicates RIGHT turn
   pinMode(GREEN, OUTPUT); //Indicates LEFT turn
@@ -38,6 +64,12 @@ void loop() {
   {
     stopMoving = !stopMoving;
     delay(200); //Prevents button bounce
+  }
+  
+  proximityValue = readProximity();
+  if(proximityValue > proxHighTolerance)
+  {
+    avoidObstacle();
   }
   
   if (!stopMoving)
@@ -81,6 +113,33 @@ void loop() {
   }
 }
 
+void avoidObstacle(){
+  stopRobot();
+  delay(1000);
+  turnRightInPlace();
+  delay(375);
+  stopRobot();
+  proximityValue = readProximity();
+  resetLights();
+  if(proximityValue < proxLowTolerance)
+  {
+    //Avoid  obstacle to the right
+    moveStraight();
+    delay(1000);
+    stopRobot();
+    delay(1000);
+    turnLeftInPlace();
+    while(digitalRead(leftBump) == HIGH){}
+    stopRobot();
+  } else {
+    // Check left side for clear path
+    digitalWrite(BLUE, HIGH);
+    delay(1000);
+    digitalWrite(BLUE, LOW);
+  }
+  delay(5000);
+}
+
 void resetLights() {
   digitalWrite(RED, LOW);
   digitalWrite(BLUE, LOW);
@@ -105,5 +164,58 @@ void turnLeft() {
 void turnRight() {
   leftWheel.write(90 + (turnFactor*90)); //Left wheel turns
   rightWheel.write(90); //Right wheels stops
+}
+
+void turnRightInPlace() {
+  digitalWrite(RED, HIGH);
+  leftWheel.write(165); //Left wheel turns
+  rightWheel.write(110); //Right wheels turns backwards
+}
+
+void turnLeftInPlace() {
+  leftWheel.write(0); //Left wheel turns backwards
+  rightWheel.write(0); //Right wheels turns
+}
+
+// readProximity() returns a 16-bit value from the VCNL4000's proximity data registers
+unsigned int readProximity()
+{
+  unsigned int data;
+  byte temp;
+  
+  temp = readByte(COMMAND_0);
+  writeByte(COMMAND_0, temp | 0x08);  // command the sensor to perform a proximity measure
+  
+  while(!(readByte(COMMAND_0)&0x20)) 
+    ;  // Wait for the proximity data ready bit to be set
+  data = readByte(PROXIMITY_RESULT_MSB) << 8;
+  data |= readByte(PROXIMITY_RESULT_LSB);
+  
+  return data;
+}
+
+// writeByte(address, data) writes a single byte of data to address
+void writeByte(byte address, byte data)
+{
+  Wire.beginTransmission(VCNL4000_ADDRESS);
+  Wire.write(address);
+  Wire.write(data);
+  Wire.endTransmission();
+}
+
+// readByte(address) reads a single byte of data from address
+byte readByte(byte address)
+{
+  byte data;
+  
+  Wire.beginTransmission(VCNL4000_ADDRESS);
+  Wire.write(address);
+  Wire.endTransmission();
+  Wire.requestFrom(VCNL4000_ADDRESS, 1);
+  while(!Wire.available())
+    ;
+  data = Wire.read();
+
+  return data;
 }
 
