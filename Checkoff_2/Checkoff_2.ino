@@ -118,7 +118,7 @@ void avoidObstacle(){
   stopRobot();
   delay(1000);
   turnRightInPlace();
-  delay(350);
+  delay(300);
   stopRobot();
   proximityValue = readProximity();
   resetLights();
@@ -126,7 +126,7 @@ void avoidObstacle(){
   {
     //Avoid  obstacle to the right
     moveStraight();
-    delay(1050);
+    delay(1000);
     stopRobot();
     delay(800);
     numBumps = 1;
@@ -137,7 +137,7 @@ void avoidObstacle(){
       numBumps = 0;
       attachInterrupt(0, countBump, FALLING);
       turnLeftInPlaceSlow();
-      delay(400);
+      delay(300);
       Serial.println(numBumps);
       digitalWrite(GREEN, HIGH);
       //stopRobot();
