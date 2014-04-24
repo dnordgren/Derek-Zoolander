@@ -11,11 +11,12 @@
 #define PROXIMITY_MOD 0x8A  // proximity modulator timing
 
 int proximityValue;
-int proxHighTolerance = 2800;
+int proxHighTolerance = 2750;
 int proxLowTolerance = 2700;
 
 int leftBump = 2;
 int rightBump = 3;
+int numBumps = 0;
 
 int BUTTON = 4;
 int RED = 8;
@@ -25,8 +26,8 @@ int leftSensor = A3;
 int rightSensor = A2;
 Servo leftWheel;
 Servo rightWheel;
-int leftDark = 940; //Approxiate dark threshold for left sensor
-int rightDark = 920; //pproximate dark threshold for right sensor
+int leftDark = 920; //Approxiate dark threshold for left sensor
+int rightDark = 910; //pproximate dark threshold for right sensor
 float speedFactor;
 float turnFactor;
 boolean stopMoving = true;
@@ -117,7 +118,7 @@ void avoidObstacle(){
   stopRobot();
   delay(1000);
   turnRightInPlace();
-  delay(375);
+  delay(350);
   stopRobot();
   proximityValue = readProximity();
   resetLights();
@@ -125,26 +126,51 @@ void avoidObstacle(){
   {
     //Avoid  obstacle to the right
     moveStraight();
-    delay(1000);
+    delay(1050);
     stopRobot();
-    delay(1000);
-    attachInterrupt(0, moveAfterBump, LOW)
+    delay(800);
+    numBumps = 1;
     turnLeftInPlace();
+    delay(400);
+    while(numBumps > 0)
+    {
+      numBumps = 0;
+      attachInterrupt(0, countBump, FALLING);
+      turnLeftInPlaceSlow();
+      delay(400);
+      Serial.println(numBumps);
+      digitalWrite(GREEN, HIGH);
+      //stopRobot();
+      //delay(1000);
+      //Adjust back to right
+      turnRightInPlace();
+      delay(150);
+      digitalWrite(GREEN, LOW);
+      moveStraight();
+      delay(500);
+    }
+    findTheLine();
     stopRobot();
   } else {
     // Check left side for clear path
     digitalWrite(BLUE, HIGH);
     delay(1000);
     digitalWrite(BLUE, LOW);
+    while(true);
   }
-  delay(5000);
+  delay(2000);
 }
 
-void moveAfterBump()
+void countBump()
 {
-  turnRightInPlace();
-  delay(100);
   stopRobot();
+  //detachInterrupt(0);
+  numBumps++;
+}
+
+void findTheLine(){
+  moveStraight();
+  while(analogRead(leftSensor) < leftDark);
 }
 
 void resetLights() {
@@ -174,14 +200,18 @@ void turnRight() {
 }
 
 void turnRightInPlace() {
-  digitalWrite(RED, HIGH);
-  leftWheel.write(165); //Left wheel turns
-  rightWheel.write(110); //Right wheels turns backwards
+  leftWheel.write(145); //Left wheel turns
+  rightWheel.write(145); //Right wheels turns backwards
 }
 
 void turnLeftInPlace() {
   leftWheel.write(0); //Left wheel turns backwards
   rightWheel.write(0); //Right wheels turns
+}
+
+void turnLeftInPlaceSlow() {
+  leftWheel.write(45);
+  rightWheel.write(45);
 }
 
 // readProximity() returns a 16-bit value from the VCNL4000's proximity data registers
