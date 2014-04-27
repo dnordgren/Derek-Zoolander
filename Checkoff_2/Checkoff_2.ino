@@ -11,7 +11,7 @@
 #define PROXIMITY_MOD 0x8A  // proximity modulator timing
 
 int proximityValue;
-int proxHighTolerance = 2750;
+int proxHighTolerance = 2800;
 int proxLowTolerance = 2700;
 
 int leftBump = 2;
@@ -26,8 +26,8 @@ int leftSensor = A3;
 int rightSensor = A2;
 Servo leftWheel;
 Servo rightWheel;
-int leftDark = 920; //Approxiate dark threshold for left sensor
-int rightDark = 910; //pproximate dark threshold for right sensor
+int leftDark = 970; //Approxiate dark threshold for left sensor
+int rightDark = 915; //pproximate dark threshold for right sensor
 float speedFactor;
 float turnFactor;
 boolean stopMoving = true;
@@ -56,6 +56,10 @@ void setup() {
   pinMode(GREEN, OUTPUT); //Indicates LEFT turn
   pinMode(BLUE, OUTPUT);  //Indicates STRAIGHT
   
+  digitalWrite(GREEN, HIGH);
+  delay(1000);
+  digitalWrite(GREEN, LOW);
+  
   Serial.begin(9600);
 }
   
@@ -66,15 +70,15 @@ void loop() {
     stopMoving = !stopMoving;
     delay(200); //Prevents button bounce
   }
-  
-  proximityValue = readProximity();
-  if(proximityValue > proxHighTolerance)
-  {
-    avoidObstacle();
-  }
-  
+    
   if (!stopMoving)
   {
+    proximityValue = readProximity();
+    if(proximityValue > proxHighTolerance)
+    {
+      avoidObstacle();
+    }
+    
     leftValue = analogRead(leftSensor);
     rightValue = analogRead(rightSensor);
     resetLights();
@@ -118,7 +122,7 @@ void avoidObstacle(){
   stopRobot();
   delay(1000);
   turnRightInPlace();
-  delay(300);
+  delay(375);
   stopRobot();
   proximityValue = readProximity();
   resetLights();
@@ -126,7 +130,7 @@ void avoidObstacle(){
   {
     //Avoid  obstacle to the right
     moveStraight();
-    delay(1000);
+    delay(850);
     stopRobot();
     delay(800);
     numBumps = 1;
@@ -137,17 +141,19 @@ void avoidObstacle(){
       numBumps = 0;
       attachInterrupt(0, countBump, FALLING);
       turnLeftInPlaceSlow();
-      delay(300);
+      delay(150);
       Serial.println(numBumps);
       digitalWrite(GREEN, HIGH);
       //stopRobot();
       //delay(1000);
       //Adjust back to right
-      turnRightInPlace();
-      delay(150);
+      turnRight();
+      delay(250);
       digitalWrite(GREEN, LOW);
-      moveStraight();
-      delay(500);
+      if(numBumps > 0){
+        moveStraight();
+        delay(500);
+      }
     }
     findTheLine();
     stopRobot();
@@ -161,6 +167,12 @@ void avoidObstacle(){
   delay(2000);
 }
 
+void listLeft()
+{
+  leftWheel.write(45 + (speedFactor*90));
+  rightWheel.write(90 - (speedFactor*90));
+}
+
 void countBump()
 {
   stopRobot();
@@ -170,7 +182,14 @@ void countBump()
 
 void findTheLine(){
   moveStraight();
-  while(analogRead(leftSensor) < leftDark);
+  delay(500);
+  listLeft();
+  resetLights();
+  digitalWrite(BLUE, HIGH);
+  while(analogRead(leftSensor) < leftDark){
+   Serial.println(analogRead(leftSensor));
+  };
+  digitalWrite(BLUE, LOW);
 }
 
 void resetLights() {
