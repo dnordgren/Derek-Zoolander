@@ -11,7 +11,7 @@
 #define PROXIMITY_MOD 0x8A  // proximity modulator timing
 
 int proximityValue;
-int proxHighTolerance = 2800;
+int proxHighTolerance = 2750;
 int proxLowTolerance = 2700;
 
 int leftBump = 2;
@@ -56,39 +56,7 @@ void setup() {
   pinMode(GREEN, OUTPUT); //Indicates LEFT turn
   pinMode(BLUE, OUTPUT);  //Indicates STRAIGHT
   
-  digitalWrite(GREEN, HIGH);
-  delay(1000);
-  digitalWrite(GREEN, LOW);
-  
   Serial.begin(9600);
-  
-  digitalWrite(RED, HIGH);
-  while(analogRead(rightSensor) < 950){}
-  digitalWrite(RED, LOW);
-  digitalWrite(GREEN, HIGH);
-  while(digitalRead(BUTTON) == HIGH){Serial.println(analogRead(rightSensor));}
-  int leftWhite = analogRead(leftSensor);
-  int midBlack = analogRead(rightSensor);
-  digitalWrite(GREEN, LOW);
-  delay(100); 
-  Serial.println(midBlack);
-  
-  digitalWrite(RED, HIGH);
-  while (analogRead(leftSensor) < 975){}
-  digitalWrite(RED, LOW);
-  digitalWrite(GREEN, HIGH);
-  while(digitalRead(BUTTON) == HIGH){Serial.println(analogRead(leftSensor));}
-  int leftBlack = analogRead(leftSensor);
-  int midWhite = analogRead(rightSensor);
-  digitalWrite(GREEN, LOW);
-  
-  Serial.print("left");
-  Serial.println(leftBlack);
-  Serial.print("right");
-  Serial.println(midBlack);
-  
-  //leftDark = leftBlack-20;
-  //rightDark = midBlack-20;  
 }
   
 void loop() {
@@ -98,20 +66,20 @@ void loop() {
     stopMoving = !stopMoving;
     delay(200); //Prevents button bounce
   }
-    
+  
+  proximityValue = readProximity();
+  if(proximityValue > proxHighTolerance)
+  {
+    avoidObstacle();
+  }
+  
   if (!stopMoving)
   {
-    proximityValue = readProximity();
-    if(proximityValue > proxHighTolerance)
-    {
-      avoidObstacle();
-    }
-    
     leftValue = analogRead(leftSensor);
     rightValue = analogRead(rightSensor);
     resetLights();
     
-    if ((leftValue < leftDark - 20) && (rightValue < rightDark - 20)) //Both sensors see white
+    if ((leftValue < leftDark) && (rightValue < rightDark- 10)) //Both sensors see white
     {
       if (crossedBlack) { //If right sensor has crossed the black line, need to turn right
         digitalWrite(RED, HIGH);
@@ -148,11 +116,9 @@ void loop() {
 
 void avoidObstacle(){
   stopRobot();
-  //delay(1000);
+  delay(1000);
   turnRightInPlace();
-  digitalWrite(RED, HIGH);
-  delay(400);
-  digitalWrite(RED, LOW);
+  delay(300);
   stopRobot();
   proximityValue = readProximity();
   resetLights();
@@ -160,24 +126,29 @@ void avoidObstacle(){
   {
     //Avoid  obstacle to the right
     moveStraight();
-    delay(850);
+    delay(1000);
     stopRobot();
-    //delay(800);
+    delay(800);
     numBumps = 1;
     turnLeftInPlace();
     delay(400);
-    numBumps = 0;
-    attachInterrupt(0, countBump, FALLING);
-    turnLeftInPlaceSlow();
-    delay(150);
-    Serial.println(numBumps);
-    digitalWrite(GREEN, HIGH);
-    //stopRobot();
-    //delay(1000);
-    //Adjust back to right
-    turnRight();
-    delay(250);
-    digitalWrite(GREEN, LOW);
+    while(numBumps > 0)
+    {
+      numBumps = 0;
+      attachInterrupt(0, countBump, FALLING);
+      turnLeftInPlaceSlow();
+      delay(300);
+      Serial.println(numBumps);
+      digitalWrite(GREEN, HIGH);
+      //stopRobot();
+      //delay(1000);
+      //Adjust back to right
+      turnRightInPlace();
+      delay(150);
+      digitalWrite(GREEN, LOW);
+      moveStraight();
+      delay(500);
+    }
     findTheLine();
     stopRobot();
   } else {
@@ -187,13 +158,7 @@ void avoidObstacle(){
     digitalWrite(BLUE, LOW);
     while(true);
   }
-  //delay(2000);
-}
-
-void listLeft()
-{
-  leftWheel.write(110);
-  rightWheel.write(30);
+  delay(2000);
 }
 
 void countBump()
@@ -205,14 +170,7 @@ void countBump()
 
 void findTheLine(){
   moveStraight();
-  delay(750);
-  listLeft();
-  resetLights();
-  digitalWrite(BLUE, HIGH);
-  while(analogRead(leftSensor) < leftDark){
-   Serial.println(analogRead(leftSensor));
-  };
-  digitalWrite(BLUE, LOW);
+  while(analogRead(leftSensor) < leftDark);
 }
 
 void resetLights() {
@@ -242,8 +200,8 @@ void turnRight() {
 }
 
 void turnRightInPlace() {
-  leftWheel.write(180); //Left wheel turns
-  rightWheel.write(180); //Right wheels turns backwards
+  leftWheel.write(145); //Left wheel turns
+  rightWheel.write(145); //Right wheels turns backwards
 }
 
 void turnLeftInPlace() {
