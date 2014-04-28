@@ -11,12 +11,14 @@
 #define PROXIMITY_MOD 0x8A  // proximity modulator timing
 
 int proximityValue;
-int proxHighTolerance = 2900;
-int proxLowTolerance = 2850;
+int proxHighTolerance = 3000;
+int proxLowTolerance = 2950;
 
 int leftBump = 2;
 int rightBump = 3;
 int numBumps = 0;
+
+boolean panic = false;
 
 int BUTTON = 4;
 int RED = 8;
@@ -61,7 +63,7 @@ void setup() {
   digitalWrite(GREEN, LOW);
   
   Serial.begin(9600);
-  
+  /*
   digitalWrite(RED, HIGH);
   while(analogRead(rightSensor) < 950){}
   digitalWrite(RED, LOW);
@@ -86,21 +88,32 @@ void setup() {
   Serial.println(leftBlack);
   Serial.print("right");
   Serial.println(midBlack);
-  
+  */
   //leftDark = leftBlack-20;
   //rightDark = midBlack-20;  
 }
   
 void loop() {
-  
+  resetLights();
+  digitalWrite(GREEN, HIGH);
   if (digitalRead(BUTTON) == LOW) //Button press will start or stop the robot
   {
     stopMoving = !stopMoving;
     delay(200); //Prevents button bounce
   }
+  
+  if (digitalRead(leftBump) == LOW)
+  {
+    panicLeft();
+  }
+  
+  if (digitalRead(rightBump) == LOW)
+  {
+    panicRight();
+  }
     
   if (!stopMoving)
-  {
+  {    
     proximityValue = readProximity();
     if(proximityValue > proxHighTolerance)
     {
@@ -113,31 +126,36 @@ void loop() {
     
     if ((leftValue < leftDark - 20) && (rightValue < rightDark - 20)) //Both sensors see white
     {
-      if (crossedBlack) { //If right sensor has crossed the black line, need to turn right
-        digitalWrite(RED, HIGH);
+      if(panic) {
+        moveStraight();
+      } else if (crossedBlack) { //If right sensor has crossed the black line, need to turn right
+        //digitalWrite(RED, HIGH);
         turnRight();
       }
       else {
-        digitalWrite(GREEN, HIGH);
+        //digitalWrite(GREEN, HIGH);
         turnLeft();
       }
     }
     else if ((leftValue > leftDark) && (rightValue < rightDark)) //Only right sensor sees white
     {
-      digitalWrite(BLUE, HIGH);
+      panic = false;
+      //digitalWrite(BLUE, HIGH);
       crossedBlack = false;
       moveStraight();
     }
     else if ((leftValue < leftDark) && (rightValue > rightDark)) //Only left sensor sees white
     {
-      digitalWrite(GREEN, HIGH);
+      panic = false;
+      //digitalWrite(GREEN, HIGH);
       crossedBlack = true;
       turnRight();
     }
     else //Both sensors see black
     {
-      digitalWrite(GREEN, HIGH);
-      turnRight();
+      panic = false;
+      //digitalWrite(GREEN, HIGH);
+      moveStraight();
     }
   }  
   else {
@@ -146,34 +164,67 @@ void loop() {
   }
 }
 
-void bumpedRight(){
-  cli();
-  turnLeftInPlace()
-  int x;
-  while(x < 1000){ x++; }
-  sei();
+void panicLeft(){
+  resetLights();
+  digitalWrite(RED, HIGH);
+  Serial.println("PANIC (left)");
+  panic = true;
+  reverse();
+  delay(1000);  
+  turnLeftInPlace();
+  delay(100);
+  listRight();
+  while(digitalRead(rightBump) == HIGH && analogRead(leftSensor) < leftDark){
+    proximityValue = readProximity();
+    if(proximityValue > proxHighTolerance)
+    {
+      turnLeftInPlace();
+      delay(300);
+      listRight();
+    }
+  }
+  turnLeftInPlace();
+  delay(10);
+  stopRobot();
 }
 
-void bumpedLeft(){
-  cli();
-  turnRightInPlace()
-  int x;
-  while(x < 1000){ x++; }
-  sei();
+void panicRight(){
+  resetLights();
+  digitalWrite(RED, HIGH);
+  Serial.println("PANIC (right)");
+  reverse();
+  panic = true;
+  delay(1000);
+  turnRightInPlace();
+  delay(100);
+  listLeft();
+  while(digitalRead(leftBump) == HIGH && analogRead(leftSensor) < leftDark){
+    proximityValue = readProximity();
+    if(proximityValue > proxHighTolerance)
+    {
+      turnRightInPlace();
+      delay(300);
+      listLeft();
+    }
+  }
+  turnRightInPlace();
+  delay(10);
 }
 
 void avoidObstacle(){
+  resetLights();
+  digitalWrite(BLUE, HIGH);
   stopRobot();
   //delay(1000);
   turnRightInPlace();
   Serial.println("Here");
-  digitalWrite(RED, HIGH);
+  //digitalWrite(RED, HIGH);
   delay(400);
-  digitalWrite(RED, LOW);
+  //digitalWrite(RED, LOW);
   stopRobot();
   proximityValue = readProximity();
   Serial.println(proximityValue);
-  resetLights();
+  //resetLights();
   if(proximityValue < proxLowTolerance)
   {
     //Avoid  obstacle to the right
@@ -189,21 +240,25 @@ void avoidObstacle(){
     turnLeftInPlaceSlow();
     delay(150);
     Serial.println(numBumps);
-    digitalWrite(GREEN, HIGH);
+    //digitalWrite(GREEN, HIGH);
     //stopRobot();
     //delay(1000);
     //Adjust back to right
     turnRight();
     delay(250);
-    digitalWrite(GREEN, LOW);
+    //digitalWrite(GREEN, LOW);
     findTheLine();
     stopRobot();
   } else {
     // Check left side for clear path
-    digitalWrite(BLUE, HIGH);
+    //digitalWrite(BLUE, HIGH);
     delay(1000);
-    digitalWrite(BLUE, LOW);
-    while(true);
+    //digitalWrite(BLUE, LOW);
+    if(digitalRead(rightBump) == LOW){
+      panicRight();
+    } else {
+      panicLeft();
+    }
   }
   //delay(2000);
 }
@@ -212,6 +267,12 @@ void listLeft()
 {
   leftWheel.write(110);
   rightWheel.write(30);
+}
+
+void listRight()
+{
+  leftWheel.write(150);
+  rightWheel.write(70);
 }
 
 void countBump()
@@ -227,10 +288,18 @@ void findTheLine(){
   listLeft();
   resetLights();
   digitalWrite(BLUE, HIGH);
+  digitalWrite(RED, HIGH);
   while(analogRead(leftSensor) < leftDark){
-   Serial.println(analogRead(leftSensor));
+    proximityValue = readProximity();
+    if(proximityValue > proxHighTolerance)
+    {
+      turnRightInPlace();
+      delay(300);
+      listLeft();
+    }
   };
-  digitalWrite(BLUE, LOW);
+  delay(10);
+  stopRobot();
 }
 
 void resetLights() {
@@ -247,6 +316,11 @@ void stopRobot() {
 void moveStraight() {
   leftWheel.write(90 + (speedFactor*90));
   rightWheel.write(90 - (speedFactor*90));
+}
+
+void reverse() {
+  leftWheel.write(0);
+  rightWheel.write(180);
 }
 
 void turnLeft() {
