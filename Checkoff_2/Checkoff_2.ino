@@ -27,7 +27,7 @@ int rightSensor = A2;
 Servo leftWheel;
 Servo rightWheel;
 int leftDark = 960; //Approxiate dark threshold for left sensor
-int rightDark = 910; //pproximate dark threshold for right sensor
+int rightDark = 960; //pproximate dark threshold for right sensor
 float speedFactor;
 float turnFactor;
 boolean stopMoving = true;
@@ -40,7 +40,7 @@ void setup() {
   leftWheel.attach(9);
   rightWheel.attach(10);
   speedFactor = .75; //Percentage of full speed robot will move straight with
-  turnFactor = .2; //Percentage of full speed robot will turn with
+  turnFactor = .5; //Percentage of full speed robot will turn with
   
   pinMode(leftBump, INPUT_PULLUP);
   pinMode(rightBump, INPUT_PULLUP);
@@ -87,8 +87,8 @@ void setup() {
   Serial.print("right");
   Serial.println(midBlack);
   
-  leftDark = leftBlack-20;
-  rightDark = midBlack-2;  
+  //leftDark = leftBlack-20;
+  //rightDark = midBlack-20;  
 }
   
 void loop() {
