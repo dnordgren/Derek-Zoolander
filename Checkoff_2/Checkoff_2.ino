@@ -11,8 +11,8 @@
 #define PROXIMITY_MOD 0x8A  // proximity modulator timing
 
 int proximityValue;
-int proxHighTolerance = 2800;
-int proxLowTolerance = 2700;
+int proxHighTolerance = 2900;
+int proxLowTolerance = 2850;
 
 int leftBump = 2;
 int rightBump = 3;
@@ -146,15 +146,33 @@ void loop() {
   }
 }
 
+void bumpedRight(){
+  cli();
+  turnLeftInPlace()
+  int x;
+  while(x < 1000){ x++; }
+  sei();
+}
+
+void bumpedLeft(){
+  cli();
+  turnRightInPlace()
+  int x;
+  while(x < 1000){ x++; }
+  sei();
+}
+
 void avoidObstacle(){
   stopRobot();
   //delay(1000);
   turnRightInPlace();
+  Serial.println("Here");
   digitalWrite(RED, HIGH);
   delay(400);
   digitalWrite(RED, LOW);
   stopRobot();
   proximityValue = readProximity();
+  Serial.println(proximityValue);
   resetLights();
   if(proximityValue < proxLowTolerance)
   {
@@ -165,9 +183,9 @@ void avoidObstacle(){
     //delay(800);
     numBumps = 1;
     turnLeftInPlace();
-    delay(400);
+    delay(300);
     numBumps = 0;
-    attachInterrupt(0, countBump, FALLING);
+    //attachInterrupt(0, countBump, FALLING);
     turnLeftInPlaceSlow();
     delay(150);
     Serial.println(numBumps);
@@ -199,7 +217,7 @@ void listLeft()
 void countBump()
 {
   stopRobot();
-  //detachInterrupt(0);
+  detachInterrupt(0);
   numBumps++;
 }
 
