@@ -26,8 +26,8 @@ int leftSensor = A3;
 int rightSensor = A2;
 Servo leftWheel;
 Servo rightWheel;
-int leftDark = 970; //Approxiate dark threshold for left sensor
-int rightDark = 915; //pproximate dark threshold for right sensor
+int leftDark = 960; //Approxiate dark threshold for left sensor
+int rightDark = 910; //pproximate dark threshold for right sensor
 float speedFactor;
 float turnFactor;
 boolean stopMoving = true;
@@ -40,7 +40,7 @@ void setup() {
   leftWheel.attach(9);
   rightWheel.attach(10);
   speedFactor = .75; //Percentage of full speed robot will move straight with
-  turnFactor = .5; //Percentage of full speed robot will turn with
+  turnFactor = .2; //Percentage of full speed robot will turn with
   
   pinMode(leftBump, INPUT_PULLUP);
   pinMode(rightBump, INPUT_PULLUP);
@@ -61,6 +61,34 @@ void setup() {
   digitalWrite(GREEN, LOW);
   
   Serial.begin(9600);
+  
+  digitalWrite(RED, HIGH);
+  while(analogRead(rightSensor) < 950){}
+  digitalWrite(RED, LOW);
+  digitalWrite(GREEN, HIGH);
+  while(digitalRead(BUTTON) == HIGH){Serial.println(analogRead(rightSensor));}
+  int leftWhite = analogRead(leftSensor);
+  int midBlack = analogRead(rightSensor);
+  digitalWrite(GREEN, LOW);
+  delay(100); 
+  Serial.println(midBlack);
+  
+  digitalWrite(RED, HIGH);
+  while (analogRead(leftSensor) < 975){}
+  digitalWrite(RED, LOW);
+  digitalWrite(GREEN, HIGH);
+  while(digitalRead(BUTTON) == HIGH){Serial.println(analogRead(leftSensor));}
+  int leftBlack = analogRead(leftSensor);
+  int midWhite = analogRead(rightSensor);
+  digitalWrite(GREEN, LOW);
+  
+  Serial.print("left");
+  Serial.println(leftBlack);
+  Serial.print("right");
+  Serial.println(midBlack);
+  
+  leftDark = leftBlack-20;
+  rightDark = midBlack-2;  
 }
   
 void loop() {
@@ -136,25 +164,23 @@ void avoidObstacle(){
     numBumps = 1;
     turnLeftInPlace();
     delay(400);
-    while(numBumps > 0)
-    {
-      numBumps = 0;
-      attachInterrupt(0, countBump, FALLING);
-      turnLeftInPlaceSlow();
-      delay(150);
-      Serial.println(numBumps);
-      digitalWrite(GREEN, HIGH);
-      //stopRobot();
-      //delay(1000);
-      //Adjust back to right
-      turnRight();
-      delay(250);
-      digitalWrite(GREEN, LOW);
-      if(numBumps > 0){
-        moveStraight();
-        delay(500);
-      }
+    numBumps = 0;
+    attachInterrupt(0, countBump, FALLING);
+    turnLeftInPlaceSlow();
+    delay(150);
+    Serial.println(numBumps);
+    digitalWrite(GREEN, HIGH);
+    //stopRobot();
+    //delay(1000);
+    //Adjust back to right
+    turnRight();
+    delay(250);
+    digitalWrite(GREEN, LOW);
+    if(numBumps > 0){
+      moveStraight();
+      delay(1000);
     }
+    
     findTheLine();
     stopRobot();
   } else {
@@ -169,8 +195,8 @@ void avoidObstacle(){
 
 void listLeft()
 {
-  leftWheel.write(45 + (speedFactor*90));
-  rightWheel.write(90 - (speedFactor*90));
+  leftWheel.write(110);
+  rightWheel.write(30);
 }
 
 void countBump()
@@ -182,7 +208,7 @@ void countBump()
 
 void findTheLine(){
   moveStraight();
-  delay(500);
+  delay(750);
   listLeft();
   resetLights();
   digitalWrite(BLUE, HIGH);
@@ -219,8 +245,8 @@ void turnRight() {
 }
 
 void turnRightInPlace() {
-  leftWheel.write(145); //Left wheel turns
-  rightWheel.write(145); //Right wheels turns backwards
+  leftWheel.write(180); //Left wheel turns
+  rightWheel.write(180); //Right wheels turns backwards
 }
 
 void turnLeftInPlace() {
