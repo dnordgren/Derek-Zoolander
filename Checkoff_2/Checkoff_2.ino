@@ -41,7 +41,7 @@ boolean crossedBlack;
 void setup() {
   leftWheel.attach(9);
   rightWheel.attach(10);
-  speedFactor = .75; //Percentage of full speed robot will move straight with
+  speedFactor = 1; //Percentage of full speed robot will move straight with
   turnFactor = .5; //Percentage of full speed robot will turn with
   
   pinMode(leftBump, INPUT_PULLUP);
@@ -289,7 +289,7 @@ void findTheLine(){
   resetLights();
   digitalWrite(BLUE, HIGH);
   digitalWrite(RED, HIGH);
-  while(analogRead(leftSensor) < leftDark){
+  while(digitalRead(leftBump) == HIGH && analogRead(leftSensor) < leftDark){
     proximityValue = readProximity();
     if(proximityValue > proxHighTolerance)
     {
